@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_KEY: str
     ALGORITHM: str
+    ADMIN_KEY: str
 
 
 setting = Settings()

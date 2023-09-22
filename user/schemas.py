@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import (
     BaseModel,
     FieldValidationInfo,
@@ -16,9 +18,10 @@ class UserValidator(BaseModel):
     is_verified: bool = False
     location: str
     phone: int
+    admin_key: Optional[str] = None
 
     @field_validator("firstname", "lastname", "username", "password")
     def validate_length(cls, value):
-        if len(value) < 4 or len(value) > 20:
+        if len(value) <= 4 or len(value) > 20:
             raise ValueError("Field length must be between 4 and 20 characters.")
         return value

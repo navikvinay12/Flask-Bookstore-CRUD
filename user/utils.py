@@ -1,13 +1,10 @@
 from datetime import datetime, timedelta
 import jwt
 from settings import setting
-from flask import jsonify
 from dotenv import load_dotenv
 import smtplib
 import os
 from email.message import EmailMessage
-
-SECRET_KEY = 'your-secret-key'  # Replace with your secret key
 
 
 def encode_jwt(user_id):
@@ -18,9 +15,9 @@ def encode_jwt(user_id):
     """
     token_payload = {
         'user_id': user_id,
-        'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiration time
+        'exp': datetime.utcnow() + timedelta(minutes=60)  # Token expiration time
     }
-    jwt_token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+    jwt_token = jwt.encode(token_payload, key=setting.JWT_KEY, algorithm=setting.ALGORITHM)
     return jwt_token
 
 
@@ -34,7 +31,7 @@ def decode_token(token):
         payload = jwt.decode(token, key=setting.JWT_KEY, algorithms=[setting.ALGORITHM])
         return payload
     except jwt.PyJWTError as ex:
-        return jsonify({"status": "Invalid token"})
+        raise ex
 
 
 def send_email(email, link):
