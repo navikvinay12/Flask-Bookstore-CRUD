@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     JWT_KEY: str
     ALGORITHM: str
     ADMIN_KEY: str
+    USER_PORT: int
+    EMAIL_USER: str
+    EMAIL_PASS: str
 
 
 setting = Settings()
