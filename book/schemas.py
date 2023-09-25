@@ -6,3 +6,10 @@ class BookValidator(BaseModel):
     author: str
     price: int
     quantity: int
+
+
+class BookUpdate(BaseModel):
+    name: str
+    author: str
+    price: int
+    quantity: int
