@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
 import jwt
 from settings import setting
-from dotenv import load_dotenv
 import smtplib
-import os
 from email.message import EmailMessage
 
 
@@ -44,9 +42,8 @@ def send_email(email, link):
     Return:
         None
     """
-    load_dotenv()  # Load the .env file
-    EMAIL_ADDRESS = os.getenv('EMAIL_USER')
-    EMAIL_PASSWORD = os.getenv('EMAIL_PASS')
+    EMAIL_ADDRESS = setting.EMAIL_USER  # os.getenv('EMAIL_USER')
+    EMAIL_PASSWORD = setting.EMAIL_PASS  # os.getenv('EMAIL_PASS')
 
     msg = EmailMessage()
     msg['Subject'] = 'Account Verification '
