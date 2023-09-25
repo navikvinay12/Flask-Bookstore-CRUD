@@ -3,7 +3,7 @@ from .models import Book
 from .schemas import BookValidator
 from flask import request, jsonify, make_response
 from flask_restx import Api, Resource
-from .utils import verify_user, exception_handler, verify_superuser
+from core.utils import verify_user, verify_superuser
 
 app = create_app(config_mode="development")
 api = Api(app)
@@ -17,13 +17,19 @@ class BookAPI(Resource):
     """
 
     @verify_user
-    def get(self, current_user):
+    def get(self, **kwargs):
         """
-        Retrieve a list of all books.
-        :param current_user: The current user's information.
-        :return: A JSON response with a list of books.
+        Get a list of books or a single book by ID.
+        Args:
+            book_id (int, optional): The ID of the book to retrieve. Defaults to None.
+        Returns:
+            dict: A JSON response with a list of books or a single book.
         """
         try:
+            book_id = request.args.get('book_id')
+            if book_id:
+                book = Book.query.get(book_id)
+                return {"msg": "Retrieved book", "status": 200, "data": book.to_dict}
             all_books = Book.query.all()
             response_data = [book.to_dict for book in all_books]
             return {"msg": "Retrieved all books", "status": 200, "data": response_data}
@@ -31,10 +37,11 @@ class BookAPI(Resource):
             return {"message": str(e), "status": 400}
 
     @verify_superuser
-    def post(self):
+    def post(self, **kwargs):
         """
         Add a new book to the database.
-        :return: A JSON response with the newly created book's data.
+        Returns:
+            dict: A JSON response with the newly created book's data.
         """
         try:
             serializer = BookValidator(**request.get_json())
@@ -45,70 +52,48 @@ class BookAPI(Resource):
         except Exception as e:
             return jsonify({"message": "Registration failed", "error": str(e)}), 400
 
-
-@api.route("/book/<int:book_id>")
-class BookByIDAPI(Resource):
-    """
-    Book APIs by ID
-    This API allows you to perform operations on individual books by their unique ID.
-    """
-
-    @verify_user
-    def get(self, current_user, book_id):
-        """
-        Get a Book by ID
-        Retrieve information about a book using its unique ID.
-        :param current_user: The current user's information.
-        :param book_id: The ID of the book to retrieve.
-        :return: A JSON response with the book's data.
-        """
-        try:
-            book_data = Book.query.get(book_id)  # or book_data = Book.query.filter_by(id=book_id).first()
-            if not book_data:
-                return {"msg": "Book is not found", "status": 404}, 404
-            return {"msg": "Retrieved Book Data", "status": 200, "data": book_data.to_dict}, 200
-        except Exception as e:
-            return {"message": str(e), "status": 400}, 400
-
     @verify_superuser
-    def put(self, book_id):
+    def put(self, **kwargs):
         """
-        Update a Book by ID
-        Update information about a book using its unique ID.
-        :param book_id: The ID of the book to update.
-        :return: A JSON response with the updated book's data.
+        Update a book by ID.
+        Args:
+            book_id (int): The ID of the book to update.
+        Returns:
+            dict: A JSON response with the updated book's data.
         """
         try:
+            book_id = request.args.get('book_id')
+            if not book_id:
+                return make_response({"msg": "Book Id Not Found", "status": 404}, 404)
             serializer = BookValidator(**request.get_json())
-            updated_book = Book(**serializer.model_dump())
             book = Book.query.get(book_id)
             if not book:
-                return make_response(jsonify({"msg": "Book Not Found", "status": 201}), 201)
-            book.name = updated_book.name
-            book.author = updated_book.author
-            book.price = updated_book.price
-            book.quantity = updated_book.quantity
+                return make_response(jsonify({"msg": "Book Not Found", "status": 404}), 404)
+            [setattr(book, x, y) for x, y in serializer.model_dump().items()]
             db.session.commit()
-            return make_response(jsonify({"msg": "Book Updated Successfully", "status": 200, "data": book.to_dict}),
+            return make_response({"msg": "Book Updated Successfully", "status": 200, "data": book.to_dict},
                                  200)
         except Exception as e:
             return {"message": str(e), "status": 400}, 400
 
     @verify_superuser
-    def delete(self, book_id):
+    def delete(self, **kwargs):
         """
-        Delete a Book by ID
-        Delete a book from the database using its unique ID.
-        :param book_id: The ID of the book to delete.
-        :return: A JSON response confirming the deletion.
+        Delete a book by ID.
+        Args:
+            book_id (int): The ID of the book to delete.
+        Returns:
+            dict: A JSON response confirming the deletion.
         """
         try:
+            book_id = request.args.get('book_id')
+            if not book_id:
+                return {"msg": "Book Id Not Found", "status": 404}, 404
             book = Book.query.get(book_id)
             if not book:
-                return {"msg": "Book Not found", "status": 404}, 404
+                return make_response(jsonify({"msg": "Book Not Found", "status": 404}), 404)
             db.session.delete(book)
             db.session.commit()
-            return make_response(jsonify({"msg": "Book Deleted Successfully", "status": 200, "data": book.to_dict}),
-                                 200)
+            return make_response(jsonify({"msg": "Book Deleted Successfully", "status": 200}), 200)
         except Exception as e:
             return {"message": str(e), "status": 400}, 400
