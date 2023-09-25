@@ -40,6 +40,7 @@ def user_registration():
 
         # Sends mail having token in the mail to user for verification while registration
         link = f"http://{request.host}{url_for('verify_user', token=token)}"
+        print(link)
         send_email(user.email, link)
 
         return jsonify({"message": "Registered", "status": 201, "data": user.to_dict}), 201
