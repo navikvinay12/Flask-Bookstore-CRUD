@@ -3,10 +3,6 @@ from passlib.hash import pbkdf2_sha256
 
 
 class User(db.Model):
-    """
-    Represents a user in the system.
-    Attributes: all fields mentioned below id, username, ..
-     """
     __tablename__ = "user"
 
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
@@ -25,7 +21,7 @@ class User(db.Model):
         """
         Convert the User object to a dictionary.
         Returns:
-            dict: A dictionary representation of the User object.
+            dict: A dictionary representation of the User object excluding password attribute.
         """
         return {"id": self.id, "firstname": self.firstname, "lastname": self.lastname, "username": self.username,
                 "email": self.email, "is_superuser": self.is_superuser,
@@ -36,8 +32,7 @@ class User(db.Model):
         self.__dict__.update(kwargs)
 
     def pass_hashing(self, password):
-        """
-        Hash a password using PBKDF2-SHA256.
+        """ Hash a password using PBKDF2-SHA256.
         Args:
             password (str): The password to be hashed.
         Returns:
@@ -47,7 +42,7 @@ class User(db.Model):
 
     def verify_pass(self, raw_pass):
         """
-        Verify a raw password against the hashed password.
+        Verify a raw (unhashed) password against the hashed password.
         Args:
             raw_pass (str): The raw (unhashed) password to be verified.
         Returns:
