@@ -4,9 +4,16 @@ from .schemas import BookValidator
 from flask import request, jsonify, make_response
 from flask_restx import Api, Resource
 from core.utils import verify_user, verify_superuser
+from .swagger_book_schema import models
 
 app = create_app(config_mode="development")
-api = Api(app)
+api = Api(app,
+          title='Book',
+          default='Book-CRUD',
+          default_label='APIs',
+          security='Bearer',
+          doc='/docs',
+          authorizations={"Bearer": {"type": "apiKey", "in": "header", "name": "authorization"}})
 
 
 @api.route("/book")
@@ -16,10 +23,10 @@ class BookAPI(Resource):
     This API allows you to manage books.
     """
 
+    @api.doc(params={'book_id': 'Get details by its book_id'})
     @verify_user
     def get(self, **kwargs):
-        """
-        Get a list of books or a single book by ID.
+        """ Description: Get a list of books or a single book by ID.
         Args:
             book_id (int, optional): The ID of the book to retrieve. Defaults to None.
         Returns:
@@ -36,26 +43,29 @@ class BookAPI(Resource):
         except Exception as e:
             return {"message": str(e), "status": 400}
 
+    @api.doc(body=api.model('book_schema', models.get('book_schema')))
     @verify_superuser
     def post(self, **kwargs):
-        """
-        Add a new book to the database.
+        """ Description: Add a new book to the database.
         Returns:
-            dict: A JSON response with the newly created book's data.
+            dict: A JSON response of the newly created book's data.
         """
         try:
             serializer = BookValidator(**request.get_json())
             book = Book(**serializer.model_dump())
             db.session.add(book)
             db.session.commit()
-            return make_response(jsonify(book.to_dict), 201)
+            return make_response(jsonify({"msg": "Book Created Successfully", "status": 201, "data": book.to_dict}),
+                                 201)
         except Exception as e:
             return jsonify({"message": "Registration failed", "error": str(e)}), 400
 
+    @api.doc(params={'book_id': 'book_id id to be updated'})
+    @api.doc(body=api.model('book_schema', models.get('book_schema')))
     @verify_superuser
     def put(self, **kwargs):
         """
-        Update a book by ID.
+        Description: Update a book by ID.
         Args:
             book_id (int): The ID of the book to update.
         Returns:
@@ -76,10 +86,10 @@ class BookAPI(Resource):
         except Exception as e:
             return {"message": str(e), "status": 400}, 400
 
+    @api.doc(params={'book_id': 'book_id id to be deleted'})
     @verify_superuser
     def delete(self, **kwargs):
-        """
-        Delete a book by ID.
+        """ Description: Delete a book by ID.
         Args:
             book_id (int): The ID of the book to delete.
         Returns:
@@ -97,3 +107,26 @@ class BookAPI(Resource):
             return make_response(jsonify({"msg": "Book Deleted Successfully", "status": 200}), 200)
         except Exception as e:
             return {"message": str(e), "status": 400}, 400
+
+
+@app.route('/set_quantity', methods=['PUT'])
+def set_book_quantity():
+    """
+    Description:
+            Updates book quantities based on provided data, ensuring stock limits aren't exceeded.
+    :return:
+        Response (Success): Status Code: 201 (Created)  (Data: Details of the created order.)
+        Response (Error): Status Code: 404 (Not Found) if the cart is not found.
+        Status Code: 400 (Bad Request) with an error message if any other error occurs.
+    """
+    try:
+        books = request.json.get('book_data')
+        for i in books:
+            book = Book.query.get(i[0])
+            if book.quantity - i[1] < 0:
+                raise Exception("Book Quantity exceeds stock limit")
+            book.quantity -= i[1]
+        db.session.commit()
+        return make_response({"msg": "success", "status": 200}, 200)
+    except Exception as e:
+        return make_response({"msg": str(e), "status": 400}, 400)
