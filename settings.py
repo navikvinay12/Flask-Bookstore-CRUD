@@ -10,6 +10,6 @@ class Settings(BaseSettings):
     USER_PORT: int
     EMAIL_USER: str
     EMAIL_PASS: str
-
+    BOOK_PORT: int
 
 setting = Settings()
