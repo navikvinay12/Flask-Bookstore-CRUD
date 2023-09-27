@@ -13,7 +13,7 @@ def encode_jwt(user_id):
     """
     token_payload = {
         'user_id': user_id,
-        'exp': datetime.utcnow() + timedelta(minutes=60)  # Token expiration time
+        'exp': datetime.utcnow() + timedelta(hours=4)  # Token expiration time
     }
     jwt_token = jwt.encode(token_payload, key=setting.JWT_KEY, algorithm=setting.ALGORITHM)
     return jwt_token
@@ -51,6 +51,6 @@ def send_email(email, link):
     msg['To'] = email
     msg.set_content(f'{link}')
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:   # port 587 is recommended .
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         smtp.send_message(msg)
