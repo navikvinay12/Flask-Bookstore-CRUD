@@ -31,7 +31,6 @@ class UserRegistrationAPI(Resource):
         try:
             serializer = UserValidator(**request.get_json())
             user = User(**serializer.model_dump())
-
             data = request.get_json()
             if data.get('admin_key') is not None:
                 if data.get('admin_key') == setting.ADMIN_KEY:
