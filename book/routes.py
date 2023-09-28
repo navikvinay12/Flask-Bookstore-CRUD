@@ -36,6 +36,8 @@ class BookAPI(Resource):
             book_id = request.args.get('book_id')
             if book_id:
                 book = Book.query.get(book_id)
+                if book is None:
+                    return {"msg": "Book ID not found", "status": 404}
                 return {"msg": "Retrieved book", "status": 200, "data": book.to_dict}
             all_books = Book.query.all()
             response_data = [book.to_dict for book in all_books]
@@ -46,7 +48,8 @@ class BookAPI(Resource):
     @api.doc(body=api.model('book_schema', models.get('book_schema')))
     @verify_superuser
     def post(self, **kwargs):
-        """ Description: Add a new book to the database.
+        """
+        Description: Add a new book to the database.
         Returns:
             dict: A JSON response of the newly created book's data.
         """
@@ -116,8 +119,8 @@ def set_book_quantity():
             Updates book quantities based on provided data, ensuring stock limits aren't exceeded.
     :return:
         Response (Success): Status Code: 201 (Created)  (Data: Details of the created order.)
-        Response (Error): Status Code: 404 (Not Found) if the cart is not found.
-        Status Code: 400 (Bad Request) with an error message if any other error occurs.
+        Response (Error): Status Code: 404 (Not Found) (if the cart is not found.)
+        Status Code: 400 (Bad Request) (with an error message if any other error occurs.)
     """
     try:
         books = request.json.get('book_data')
@@ -128,5 +131,17 @@ def set_book_quantity():
             book.quantity -= i[1]
         db.session.commit()
         return make_response({"msg": "success", "status": 200}, 200)
+    except Exception as e:
+        return make_response({"msg": str(e), "status": 400}, 400)
+
+
+@app.route('/get_book_by_id', methods=['GET'])
+def get_book():
+    try:
+        book_id = request.args.get('book_id')
+        book = Book.query.filter_by(id=book_id).one_or_none()  # getting requested book from db
+        if not book:
+            return jsonify({"message": "Book Not Found"}, 404)
+        return make_response(book.to_dict, 200)
     except Exception as e:
         return make_response({"msg": str(e), "status": 400}, 400)
